@@ -13,7 +13,7 @@
         }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
 
     <style>
@@ -49,12 +49,12 @@
 
 <body class="min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 m-0 p-0 font-sans">
 
-    <div id="loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-gray-900">
-        <svg class="w-12 h-12 text-blue-500 animate-spin mb-4" fill="none" viewBox="0 0 24 24">
+    <div id="loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-6 text-center">
+        <svg id="loadingSpinner" class="w-12 h-12 text-blue-500 animate-spin mb-4" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <div class="text-lg font-medium animate-pulse text-gray-600 dark:text-gray-300">Initializing AI...</div>
+        <div id="loadingText" class="text-lg font-medium animate-pulse text-gray-600 dark:text-gray-300">Initializing AI...</div>
     </div>
 
     <div id="app" class="hidden flex-1 flex w-full max-w-full">
@@ -166,7 +166,7 @@
                     state = { ...state, ...parsed };
                 }
             } catch (e) {
-                console.error("Local storage load failed", e);
+                console.warn("Local storage load failed", e);
             }
         }
 
@@ -174,7 +174,7 @@
             try {
                 localStorage.setItem('ai_chat_state', JSON.stringify(state));
             } catch (e) {
-                console.error("Local storage save failed", e);
+                console.warn("Local storage save failed", e);
             }
         }
 
@@ -183,6 +183,8 @@
         // ---------------------------------------------------------
         const elements = {
             loading: document.getElementById('loading'),
+            loadingText: document.getElementById('loadingText'),
+            loadingSpinner: document.getElementById('loadingSpinner'),
             app: document.getElementById('app'),
             sidebar: document.getElementById('sidebar'),
             sidebarOverlay: document.getElementById('sidebarOverlay'),
@@ -234,12 +236,15 @@
         function renderChatList() {
             elements.chatList.innerHTML = '';
             
-            if (state.chats.length === 0) {
+            if (!state.chats || state.chats.length === 0) {
                 elements.chatList.innerHTML = `<li class="text-sm text-gray-500 dark:text-gray-400 p-2 text-center italic">No history</li>`;
                 return;
             }
 
-            state.chats.sort((a, b) => b.updatedAt - a.updatedAt).forEach(chat => {
+            // Create a copy to avoid mutating the state array during render
+            const sortedChats = [...state.chats].sort((a, b) => b.updatedAt - a.updatedAt);
+            
+            sortedChats.forEach(chat => {
                 const isActive = chat.id === state.currentChatId;
                 const li = document.createElement('li');
                 li.className = `group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${isActive ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`;
@@ -274,7 +279,7 @@
             elements.messagesContainer.innerHTML = '';
             const chat = state.chats.find(c => c.id === state.currentChatId);
 
-            if (!chat || chat.messages.length === 0) {
+            if (!chat || !chat.messages || chat.messages.length === 0) {
                 elements.messagesContainer.innerHTML = createEmptyState();
                 elements.currentChatTitle.textContent = "New Chat";
                 return;
@@ -283,7 +288,7 @@
             elements.currentChatTitle.textContent = chat.title;
 
             chat.messages.forEach(msg => {
-                if(msg.role === 'system') return; // Hide system prompt from UI
+                if(msg.role === 'system') return; 
                 appendMessageDOM(msg.role, msg.content, false);
             });
 
@@ -304,7 +309,7 @@
                     </div>
                 `;
             } else {
-                const parsedContent = DOMPurify.sanitize(marked.parse(content || ''));
+                const parsedContent = (typeof marked !== 'undefined') ? DOMPurify.sanitize(marked.parse(content || '')) : DOMPurify.sanitize(content || '');
                 const cursorClass = isStreaming ? 'typing-cursor' : '';
                 wrapper.innerHTML = `
                     <div class="flex gap-4 max-w-full w-full group">
@@ -321,19 +326,10 @@
             elements.messagesContainer.appendChild(wrapper);
             window.scrollTo(0, document.body.scrollHeight);
             
-            // Return the exact DOM node that holds the text for streaming updates
             if (role === 'assistant') {
                 return wrapper.querySelector('.markdown-content');
             }
         }
 
         // ---------------------------------------------------------
-        // 4. CHAT MANAGEMENT
-        // ---------------------------------------------------------
-        function createNewChat() {
-            state.currentChatId = null;
-            safeSave();
-            renderChatList();
-            renderMessages();
-            if (window.innerWidth < 768) toggleSidebar(false);
-            eleme
+        // 4. C
