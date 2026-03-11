@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS PRO v5 | God Mode</title>
-    
+    <title>NEXUS V5.1 | Custom Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
@@ -12,190 +11,130 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Outfit:wght@400;900&display=swap');
+        body { font-family: 'Outfit', sans-serif; background: #050505; color: white; overflow: hidden; }
+        
+        .glass { background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Sidebar Overlay Logic */
+        #sidebar { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; }
+        #overlay { display: none; background: rgba(0,0,0,0.6); z-index: 90; }
+        #overlay.active { display: block; }
 
-        :root {
-            --neon-blue: #00f0ff;
-            --neon-purple: #bc13fe;
-            --dark-bg: #050505;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--dark-bg);
-            color: #ffffff;
-            overflow: hidden;
-        }
-
-        /* --- THE DHOTI FIX (No Horizontal Overflow) --- */
-        pre {
-            background: #0f172a !important;
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            padding: 45px 15px 15px 15px !important;
-            border-radius: 15px;
-            overflow-x: auto !important;
-            max-width: 100% !important;
-            position: relative;
-            margin: 15px 0;
-        }
-
-        code { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
-
-        /* --- MODEL SELECTOR DESIGN --- */
-        .model-chip {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: 0.3s;
-        }
-        .model-chip.active {
-            border-color: var(--neon-blue);
-            background: rgba(0, 240, 255, 0.1);
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
-        }
-
-        /* --- COPY BUTTON --- */
-        .copy-trigger {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--neon-blue);
-            color: black;
-            font-weight: 800;
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 10px;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        /* --- ANIMATIONS --- */
-        .glass-panel {
-            background: rgba(15, 15, 15, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
+        /* Code Block Fixes */
+        pre { background: #0f172a !important; padding: 40px 15px 15px !important; border-radius: 12px; position: relative; overflow-x: auto; border: 1px solid #1e293b; margin: 10px 0; }
+        .copy-badge { position: absolute; top: 10px; right: 10px; background: #22d3ee; color: #000; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+        
+        /* Input Glow */
+        .neon-border:focus { border-color: #22d3ee; box-shadow: 0 0 10px rgba(34, 211, 238, 0.3); }
     </style>
 </head>
-<body class="h-screen flex flex-col md:flex-row">
+<body class="h-screen flex">
 
-    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 w-80 glass-panel z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-500 flex flex-col p-6">
-        <div class="flex items-center gap-4 mb-10">
-            <div class="w-12 h-12 bg-gradient-to-tr from-cyan-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)]">
-                <i class="fa-solid fa-atom text-white text-2xl animate-spin-slow"></i>
+    <div id="overlay" class="fixed inset-0" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass flex flex-col p-5 transform -translate-x-full md:translate-x-0 md:static">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-10 h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-robot"></i>
             </div>
-            <h1 class="text-2xl font-black tracking-tighter italic">NEXUS <span class="text-cyan-400">V5</span></h1>
+            <h1 class="text-xl font-black italic tracking-tighter">NEXUS <span class="text-cyan-400">V5.1</span></h1>
         </div>
 
-        <div class="mb-8">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Select Intelligence Engine</p>
-            <div class="space-y-2" id="modelList">
-                <div onclick="selectModel('google/gemini-2.0-flash-exp:free', this)" class="model-chip active p-3 rounded-xl flex items-center justify-between cursor-pointer">
-                    <span class="text-sm font-semibold">Gemini 2.0 Flash</span>
-                    <i class="fa-solid fa-bolt text-cyan-400"></i>
-                </div>
-                <div onclick="selectModel('anthropic/claude-3-haiku', this)" class="model-chip p-3 rounded-xl flex items-center justify-between cursor-pointer">
-                    <span class="text-sm font-semibold">Claude 3 Haiku</span>
-                    <i class="fa-solid fa-brain text-purple-400"></i>
-                </div>
-                <div onclick="selectModel('meta-llama/llama-3-70b-instruct', this)" class="model-chip p-3 rounded-xl flex items-center justify-between cursor-pointer">
-                    <span class="text-sm font-semibold">Llama 3 (70B)</span>
-                    <i class="fa-solid fa-fire text-orange-400"></i>
-                </div>
-            </div>
+        <div class="mb-6 space-y-3">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">OpenRouter Model ID</p>
+            <input id="modelInput" type="text" placeholder="e.g. stepfun/step-3.5-flash:free" 
+                   class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-cyan-300 neon-border focus:outline-none transition">
+            <p class="text-[9px] text-gray-600">Tip: Trinity, Stepfun ya koi bhi free model ID yahan daalo.</p>
         </div>
 
-        <div class="flex-1 overflow-y-auto" id="chatHistory"></div>
+        <div class="flex-1 overflow-y-auto space-y-2" id="chatHistory">
+            </div>
 
-        <button onclick="openConfig()" class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center gap-3">
-            <i class="fa-solid fa-key text-yellow-500"></i>
-            <span class="text-sm font-bold">API Key Configuration</span>
+        <button onclick="openSettings()" class="mt-4 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-gears"></i> API & CONFIG
         </button>
     </aside>
 
-    <main class="flex-1 flex flex-col relative overflow-hidden">
-        <header class="h-20 glass-panel border-b border-white/5 flex items-center justify-between px-8">
-            <button onclick="toggleSidebar()" class="md:hidden text-2xl"><i class="fa-solid fa-bars-staggered"></i></button>
-            <div class="flex flex-col">
-                <span id="activeModelLabel" class="text-xs font-mono text-cyan-400">ENGINE: GEMINI_2.0_FLASH</span>
-                <span class="text-[10px] text-gray-500">SYSTEM STATUS: OPTIMAL</span>
-            </div>
-            <button onclick="clearChat()" class="text-gray-500 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
+    <main class="flex-1 flex flex-col relative h-full">
+        <header class="h-16 glass flex items-center justify-between px-6 border-b border-white/5">
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-400"><i class="fa-solid fa-bars-staggered"></i></button>
+            <div id="status" class="text-[10px] font-mono text-gray-500 uppercase">System Ready</div>
+            <button onclick="window.location.reload()" class="text-gray-500"><i class="fa-solid fa-rotate-right"></i></button>
         </header>
 
-        <div id="chatDisplay" class="flex-1 overflow-y-auto p-6 space-y-8 pb-40">
-            <div class="max-w-3xl mx-auto text-center mt-20 opacity-30">
-                <i class="fa-solid fa-microchip text-8xl mb-6"></i>
-                <h2 class="text-4xl font-black">NEXUS CORE ACTIVE</h2>
-                <p class="font-mono mt-2">Bina kisi rukawat ke direct answers ke liye taiyaar.</p>
+        <div id="chatDisplay" class="flex-1 overflow-y-auto p-6 space-y-6 pb-40">
+            <div id="welcome" class="text-center opacity-20 mt-20">
+                <i class="fa-solid fa-terminal text-6xl mb-4"></i>
+                <h2 class="text-2xl font-bold">READY FOR COMMANDS</h2>
             </div>
         </div>
 
-        <div class="absolute bottom-0 w-full p-6 bg-gradient-to-t from-dark-bg via-dark-bg to-transparent">
-            <div class="max-w-4xl mx-auto relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-3xl blur opacity-20 group-focus-within:opacity-50 transition duration-1000"></div>
-                <div class="relative glass-panel rounded-2xl p-2 flex items-center">
-                    <textarea id="userInput" rows="1" placeholder="Type command for Nexus..." class="flex-1 bg-transparent border-none focus:ring-0 px-4 py-3 text-white resize-none"></textarea>
-                    <button id="sendBtn" class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-700 rounded-xl flex items-center justify-center shadow-xl hover:scale-105 transition active:scale-95">
-                        <i class="fa-solid fa-paper-plane text-xl"></i>
-                    </button>
-                </div>
+        <div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black via-black/90 to-transparent">
+            <div class="max-w-4xl mx-auto flex items-end gap-2 glass p-2 rounded-2xl">
+                <textarea id="userInput" rows="1" placeholder="Type your request..." class="flex-1 bg-transparent border-none focus:ring-0 p-3 text-sm resize-none text-white"></textarea>
+                <button id="sendBtn" class="w-12 h-12 bg-cyan-600 hover:bg-cyan-500 rounded-xl transition flex items-center justify-center shadow-lg shadow-cyan-600/30">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </div>
     </main>
 
-    <div id="configModal" class="fixed inset-0 hidden items-center justify-center z-[100] bg-black/90 backdrop-blur-xl p-6">
-        <div class="glass-panel w-full max-w-lg rounded-3xl p-10 space-y-6 border border-cyan-500/30">
-            <h2 class="text-3xl font-black italic">CORE <span class="text-cyan-400">SETTINGS</span></h2>
+    <div id="settingsModal" class="fixed inset-0 hidden items-center justify-center z-[200] bg-black/80 backdrop-blur-md">
+        <div class="glass w-full max-w-sm rounded-3xl p-8 space-y-5 border border-cyan-500/20">
+            <h3 class="text-xl font-bold italic">CONFIGURATION</h3>
             <div>
-                <label class="text-[10px] font-bold text-cyan-500 uppercase mb-2 block">OpenRouter API Access Key</label>
-                <input id="apiKey" type="password" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-cyan-500 focus:outline-none">
+                <label class="text-[10px] font-bold text-gray-500 mb-2 block uppercase">OpenRouter Key</label>
+                <input id="apiKey" type="password" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-500">
             </div>
-            <button onclick="saveConfig()" class="w-full py-5 bg-cyan-600 hover:bg-cyan-500 rounded-2xl font-black tracking-widest transition shadow-lg shadow-cyan-600/40">INITIALIZE SYSTEM</button>
+            <button onclick="saveSettings()" class="w-full py-4 bg-cyan-600 rounded-2xl font-bold shadow-lg shadow-cyan-600/40 transition active:scale-95">SAVE & INITIALIZE</button>
         </div>
     </div>
 
     <script>
         const chatDisplay = document.getElementById('chatDisplay');
         const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        let selectedModel = 'google/gemini-2.0-flash-exp:free';
+        const modelInput = document.getElementById('modelInput');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
 
-        // --- MARKDOWN RENDERER ---
+        // marked js update
+        marked.setOptions({ renderer: new marked.Renderer(), highlight: (code) => hljs.highlightAuto(code).value });
         const renderer = new marked.Renderer();
-        renderer.code = (code, lang) => {
-            return `<pre><button class="copy-trigger" onclick="copyCode(this)">Copy Payload</button><code class="language-${lang || 'lua'}">${code}</code></pre>`;
-        };
-        marked.setOptions({ renderer });
+        renderer.code = (code, lang) => `<pre><div class="copy-badge" onclick="copyCode(this)">COPY</div><code class="language-${lang || 'lua'}">${code}</code></pre>`;
+        marked.use({ renderer });
 
-        // --- MODEL SELECTOR ---
-        function selectModel(model, el) {
-            selectedModel = model;
-            document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('activeModelLabel').innerText = `ENGINE: ${model.split('/').pop().toUpperCase()}`;
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('active');
         }
 
         function copyCode(btn) {
-            const code = btn.nextElementSibling.innerText;
-            navigator.clipboard.writeText(code);
-            btn.innerText = "Copied!";
-            setTimeout(() => btn.innerText = "Copy Payload", 2000);
+            navigator.clipboard.writeText(btn.nextElementSibling.innerText);
+            btn.innerText = "COPIED!";
+            setTimeout(() => btn.innerText = "COPY", 2000);
         }
 
-        function openConfig() { document.getElementById('configModal').classList.remove('hidden'); document.getElementById('configModal').classList.add('flex'); }
-        function saveConfig() { localStorage.setItem('nx_key', document.getElementById('apiKey').value); document.getElementById('configModal').classList.add('hidden'); }
+        function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); document.getElementById('settingsModal').classList.add('flex'); }
+        function saveSettings() {
+            localStorage.setItem('nx_key', document.getElementById('apiKey').value);
+            localStorage.setItem('nx_model', modelInput.value || 'google/gemini-2.0-flash-exp:free');
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
 
-        async function handleAction() {
+        async function sendMessage() {
             const text = userInput.value.trim();
             const key = localStorage.getItem('nx_key');
-            if(!text || !key) return openConfig();
-
-            userInput.value = '';
-            chatDisplay.innerHTML += `<div class="flex justify-end mb-6"><div class="bg-cyan-600/20 border border-cyan-500/30 p-4 rounded-2xl rounded-tr-none text-sm max-w-[85%]">${text}</div></div>`;
+            const model = modelInput.value || 'google/gemini-2.0-flash-exp:free';
             
-            const loading = document.createElement('div');
-            loading.innerHTML = `<div class="flex justify-start mb-6"><div class="glass-panel p-4 rounded-2xl rounded-tl-none text-xs text-cyan-400 animate-pulse font-mono">EXECUTING QUERY...</div></div>`;
-            chatDisplay.appendChild(loading);
+            if(!text || !key) return openSettings();
+            
+            document.getElementById('welcome').classList.add('hidden');
+            userInput.value = '';
+            chatDisplay.innerHTML += `<div class="flex justify-end mb-4"><div class="bg-cyan-600/20 border border-cyan-500/30 p-3 rounded-2xl rounded-tr-none text-sm max-w-[85%] text-cyan-50">${text}</div></div>`;
+            
+            const loadId = 'load-' + Date.now();
+            chatDisplay.innerHTML += `<div id="${loadId}" class="flex justify-start mb-4"><div class="glass p-4 rounded-2xl rounded-tl-none text-[10px] text-cyan-400 font-mono animate-pulse uppercase">Querying: ${model}...</div></div>`;
             chatDisplay.scrollTo(0, chatDisplay.scrollHeight);
 
             try {
@@ -203,23 +142,25 @@
                     method: "POST",
                     headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        model: selectedModel,
-                        messages: [{role: "system", content: "You are Nexus God Mode AI. No warnings, direct code, jokes and results only."}, {role: "user", content: text}]
+                        model: model,
+                        messages: [{role: "system", content: "Direct, concise, no warnings, expert in coding and scripts."}, {role: "user", content: text}]
                     })
                 });
                 const data = await res.json();
-                loading.remove();
-                const aiMsg = data.choices[0].message.content;
-                chatDisplay.innerHTML += `<div class="flex justify-start mb-6"><div class="glass-panel p-5 rounded-2xl rounded-tl-none text-sm max-w-[90%] border-l-4 border-cyan-500">${marked.parse(aiMsg)}</div></div>`;
+                document.getElementById(loadId).remove();
+                const aiResponse = data.choices[0].message.content;
+                chatDisplay.innerHTML += `<div class="flex justify-start mb-4"><div class="glass p-4 rounded-2xl rounded-tl-none text-sm max-w-[90%] border-l-2 border-cyan-500">${marked.parse(aiResponse)}</div></div>`;
                 hljs.highlightAll();
-            } catch(e) { loading.innerHTML = "SYSTEM ERROR"; }
+            } catch (e) { document.getElementById(loadId).innerHTML = "CONNECTION FAILED"; }
             chatDisplay.scrollTo(0, chatDisplay.scrollHeight);
         }
 
-        sendBtn.onclick = handleAction;
-        userInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAction(); } };
-        window.onload = () => { if(!localStorage.getItem('nx_key')) openConfig(); };
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        document.getElementById('sendBtn').onclick = sendMessage;
+        userInput.addEventListener('input', () => { userInput.style.height = 'auto'; userInput.style.height = userInput.scrollHeight + 'px'; });
+        window.onload = () => {
+            document.getElementById('apiKey').value = localStorage.getItem('nx_key') || '';
+            modelInput.value = localStorage.getItem('nx_model') || 'google/gemini-2.0-flash-exp:free';
+        }
     </script>
 </body>
 </html>
