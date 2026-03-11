@@ -1,274 +1,634 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus AI | Created by Aqdas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus v3.0 | The Papa Edition</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        nexus: {
+                            dark: '#0f172a',
+                            darker: '#0b1120',
+                            primary: '#3b82f6',
+                            glow: '#60a5fa',
+                            panel: 'rgba(30, 41, 59, 0.7)'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
+        /* Pro Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
         .chat-scroll { scroll-behavior: smooth; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
-        /* Typing animation like ChatGPT */
-        .typing::after { content: "▋"; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 0 } 50% { opacity: 1 } 100% { opacity: 0 } }
-        /* Sidebar transition fix */
-        #sidebar { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            margin-right: 3px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Code Block Styling for Roblox Scripts */
+        pre {
+            position: relative;
+            background: #1e1e1e !important;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid #334155;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background: rgba(59, 130, 246, 0.8); }
+
+        /* Toast Messages */
+        #toast-container { z-index: 9999; }
+        .toast {
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
     </style>
 </head>
 
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 h-screen overflow-hidden">
+<body class="bg-gray-50 dark:bg-nexus-darker text-gray-800 dark:text-gray-200 h-screen overflow-hidden font-sans selection:bg-blue-500 selection:text-white transition-colors duration-300">
 
-<div id="loading" class="fixed inset-0 flex items-center justify-center text-xl bg-white dark:bg-gray-900 z-[100]">
-    <div class="flex flex-col items-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        Nexus Loading...
-    </div>
-</div>
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 flex flex-col gap-2 pointer-events-none"></div>
 
-<div id="app" class="hidden h-full flex relative">
+    <div id="app" class="h-full flex relative w-full max-w-[1600px] mx-auto animate-fade-in">
 
-    <div id="sidebar" class="fixed md:relative z-50 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full transform -translate-x-full md:translate-x-0">
-        <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
-            <span class="font-bold text-blue-500 italic">NEXUS HISTORY</span>
-            <div class="flex gap-2">
-                <button id="newChat" class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 px-2 py-1 rounded text-sm transition">New</button>
-                <button id="closeSidebar" class="md:hidden text-2xl px-2">&times;</button>
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+
+        <div id="sidebar" class="fixed md:relative z-50 w-72 md:w-80 h-full glass-panel border-r border-gray-200 dark:border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col shadow-2xl">
+            
+            <div class="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="font-black text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">NEXUS v3</h2>
+                        <p class="text-[10px] text-gray-400 font-mono tracking-widest uppercase">Aqdas Edition</p>
+                    </div>
+                </div>
+                <button id="closeSidebarBtn" class="md:hidden text-gray-400 hover:text-white p-2 bg-gray-800 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-4">
+                <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    New Exploit Session
+                </button>
+            </div>
+
+            <div class="px-4 pb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">History</div>
+            <div id="chatList" class="flex-1 overflow-y-auto px-3 space-y-1 pb-4">
+                </div>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 bg-black/10">
+                <button id="openSettingsBtn" class="w-full flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aqdas" alt="Avatar" class="w-9 h-9 rounded-full bg-gray-700">
+                        <div class="text-left">
+                            <p class="text-sm font-bold text-gray-200">The Papa</p>
+                            <p class="text-xs text-green-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> System Online</p>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-500 group-hover:text-white transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
             </div>
         </div>
-        <div id="chatList" class="overflow-y-auto h-[calc(100%-4rem)] pb-20 p-2 space-y-2"></div>
-    </div>
 
-    <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
-
-    <div class="flex flex-col flex-1 h-full relative">
-        <div class="flex items-center justify-between p-3 border-b dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-30">
-            <div class="flex items-center gap-3">
-                <button id="menuBtn" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition">☰</button>
-                <h1 class="font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent italic">NEXUS AI</h1>
+        <div class="flex-1 flex flex-col h-full relative bg-gray-50 dark:bg-nexus-dark">
+            
+            <div class="h-16 glass-panel border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 sticky top-0 z-30">
+                <div class="flex items-center gap-3">
+                    <button id="menuToggleBtn" class="md:hidden p-2 text-gray-500 hover:text-white bg-gray-200 dark:bg-gray-800 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <div class="flex flex-col">
+                        <span id="currentModelDisplay" class="text-xs font-mono text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md border border-blue-400/20">Loading Model...</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button id="clearChatBtn" class="p-2 text-gray-400 hover:text-red-400 transition" title="Clear Chat">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <button id="themeToggleBtn" class="p-2 text-gray-400 hover:text-yellow-400 transition" title="Toggle Theme">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    </button>
+                </div>
             </div>
-            <div class="flex items-center gap-2">
-                <button id="darkToggle" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition">🌙</button>
-                <button id="settingsBtn" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition">⚙️</button>
+
+            <div id="chatBox" class="flex-1 overflow-y-auto chat-scroll p-4 md:p-6 space-y-6 pb-40">
+                <div id="welcomeScreen" class="h-full flex flex-col items-center justify-center text-center animate-slide-up opacity-50 pointer-events-none">
+                    <svg class="w-24 h-24 text-blue-500 mb-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    <h2 class="text-2xl font-bold mb-2">Nexus Scripting Core Ready</h2>
+                    <p class="text-sm text-gray-400 max-w-md">Enter your Luau command below or select a quick action to generate an exploit script.</p>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 w-full bg-gradient-to-t from-gray-50 via-gray-50/90 to-transparent dark:from-nexus-darker dark:via-nexus-darker/90 pb-4 pt-10 px-4 md:px-8 z-30">
+                
+                <div id="quickPrompts" class="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-2">
+                    <button class="quick-btn whitespace-nowrap bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-xs font-medium hover:border-blue-500 transition text-gray-400">🔥 Generate Fly Script</button>
+                    <button class="quick-btn whitespace-nowrap bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-xs font-medium hover:border-blue-500 transition text-gray-400">👁️ Simple ESP Box</button>
+                    <button class="quick-btn whitespace-nowrap bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-xs font-medium hover:border-blue-500 transition text-gray-400">🛡️ Anti-Ban Bypass Template</button>
+                    <button class="quick-btn whitespace-nowrap bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-1.5 text-xs font-medium hover:border-blue-500 transition text-gray-400">🐛 Fix my Lua Error</button>
+                </div>
+
+                <div class="max-w-4xl mx-auto glass-panel p-2 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-2xl flex items-end gap-2 relative">
+                    <textarea id="userInput" rows="1" placeholder="Type command for Nexus..." class="flex-1 bg-transparent border-none focus:ring-0 p-3 text-sm md:text-base resize-none max-h-40 text-gray-900 dark:text-white placeholder-gray-500 leading-relaxed"></textarea>
+                    
+                    <button id="sendMsgBtn" class="bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-xl transition-all shadow-lg active:scale-90 mb-1">
+                        <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </div>
+                <div class="text-center mt-2 text-[10px] text-gray-500 font-mono">Powered by Project Nexus Core • End-to-End API Integration</div>
             </div>
         </div>
+    </div>
 
-        <div id="chatArea" class="flex-1 overflow-y-auto chat-scroll p-4 space-y-6 pb-32">
+    <div id="settingsModal" class="fixed inset-0 hidden items-center justify-center bg-black/70 z-[100] backdrop-blur-md transition-opacity duration-300 opacity-0">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-3xl w-[90%] max-w-lg shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform duration-300" id="settingsBox">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500">System Configuration</h2>
+                <button id="closeSettingsIcon" class="text-gray-500 hover:text-white p-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
-
-        <div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-gray-100 dark:from-gray-900 via-gray-100/90 dark:via-gray-900/90 to-transparent">
-            <div class="max-w-3xl mx-auto flex gap-2 glass p-2 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-2xl bg-white dark:bg-gray-800">
-                <textarea id="messageInput" rows="1" placeholder="Type to hack the world..." 
-                    class="flex-1 bg-transparent border-none focus:ring-0 p-2 text-sm md:text-base dark:text-white resize-none max-h-32"></textarea>
-                <button id="sendBtn" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition shadow-lg">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            
+            <div class="space-y-4 text-sm max-h-[60vh] overflow-y-auto px-1 chat-scroll">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">OpenRouter API Key <span class="text-red-500">*</span></label>
+                    <input id="apiInput" type="password" placeholder="sk-or-v1-..." class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-black dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">AI Model ID</label>
+                    <input id="modelInput" type="text" placeholder="anthropic/claude-3-sonnet" class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-black dark:text-white font-mono text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">System Prompt (The Brainwash)</label>
+                    <textarea id="promptInput" rows="4" placeholder="You are Nexus, a Lua expert..." class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none text-black dark:text-white leading-relaxed"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-8 border-t dark:border-gray-800 pt-4">
+                <button id="cancelSettingsBtn" class="px-5 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition">Cancel</button>
+                <button id="saveSettingsBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Save Config
                 </button>
             </div>
         </div>
     </div>
-</div>
 
-<div id="settingsModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-[60] backdrop-blur-sm">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-[90%] max-w-md shadow-2xl border dark:border-gray-700">
-        <h2 class="font-bold text-xl mb-4 border-b pb-2 dark:border-gray-700">Project Nexus Config</h2>
-        <div class="space-y-4 text-sm">
-            <input id="apiKeyInput" type="password" placeholder="OpenRouter API Key" class="w-full p-3 rounded-xl dark:bg-gray-900 border dark:border-gray-700 focus:outline-none focus:border-blue-500">
-            <input id="modelInput" type="text" placeholder="Model (e.g. anthropic/claude-3-sonnet)" class="w-full p-3 rounded-xl dark:bg-gray-900 border dark:border-gray-700 focus:outline-none focus:border-blue-500">
-            <textarea id="systemPromptInput" rows="3" placeholder="System Prompt (Define AI behavior)" class="w-full p-3 rounded-xl dark:bg-gray-900 border dark:border-gray-700 focus:outline-none focus:border-blue-500"></textarea>
-        </div>
-        <div class="flex justify-end gap-3 mt-6">
-            <button id="closeSettings" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400">Cancel</button>
-            <button id="saveSettings" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold shadow-md transition">Save Nexus</button>
-        </div>
-    </div>
-</div>
+    <script>
+        // --- DOM ELEMENTS ---
+        const D = document;
+        const els = {
+            sidebar: D.getElementById('sidebar'),
+            overlay: D.getElementById('sidebar-overlay'),
+            menuBtn: D.getElementById('menuToggleBtn'),
+            closeMenuBtn: D.getElementById('closeSidebarBtn'),
+            chatBox: D.getElementById('chatBox'),
+            chatList: D.getElementById('chatList'),
+            userInput: D.getElementById('userInput'),
+            sendBtn: D.getElementById('sendMsgBtn'),
+            newChatBtn: D.getElementById('newChatBtn'),
+            clearBtn: D.getElementById('clearChatBtn'),
+            themeBtn: D.getElementById('themeToggleBtn'),
+            settingsBtn: D.getElementById('openSettingsBtn'),
+            settingsModal: D.getElementById('settingsModal'),
+            settingsBox: D.getElementById('settingsBox'),
+            saveSettingsBtn: D.getElementById('saveSettingsBtn'),
+            cancelSettingsBtn: D.getElementById('cancelSettingsBtn'),
+            closeSettingsIcon: D.getElementById('closeSettingsIcon'),
+            apiIn: D.getElementById('apiInput'),
+            modelIn: D.getElementById('modelInput'),
+            promptIn: D.getElementById('promptInput'),
+            modelDisplay: D.getElementById('currentModelDisplay'),
+            welcomeScreen: D.getElementById('welcomeScreen'),
+            quickBtns: D.querySelectorAll('.quick-btn')
+        };
 
-<script>
-    // --- BASIC LOGIC SYNC ---
-    const loading = document.getElementById("loading");
-    const app = document.getElementById("app");
-    const chatArea = document.getElementById("chatArea");
-    const chatList = document.getElementById("chatList");
-    const input = document.getElementById("messageInput");
-    const sidebar = document.getElementById("sidebar");
-    const overlay = document.getElementById("overlay");
-
-    let chats = JSON.parse(localStorage.getItem("chats") || "[]");
-    let currentChatId = null;
-    let apiKey = localStorage.getItem("apiKey") || "";
-    let model = localStorage.getItem("model") || "deepseek/deepseek-r1:free";
-    let systemPrompt = localStorage.getItem("systemPrompt") || "You are Nexus AI, created by Aqdas (The Papa).";
-
-    if(localStorage.getItem("dark") === "true") document.documentElement.classList.add("dark");
-
-    // --- SIDEBAR UI LOGIC ---
-    function toggleSidebar() {
-        sidebar.classList.toggle("-translate-x-full");
-        overlay.classList.toggle("hidden");
-    }
-
-    document.getElementById("menuBtn").onclick = toggleSidebar;
-    document.getElementById("closeSidebar").onclick = toggleSidebar;
-    overlay.onclick = toggleSidebar;
-
-    function save() { localStorage.setItem("chats", JSON.stringify(chats)); }
-
-    function newChat() {
-        const id = Date.now();
-        const chat = { id, title: "New Session", messages: [] };
-        chats.unshift(chat);
-        currentChatId = id;
-        save();
-        renderChats();
-        renderMessages();
-        if(!sidebar.classList.contains("-translate-x-full")) toggleSidebar();
-    }
-
-    function renderChats() {
-        chatList.innerHTML = "";
-        chats.forEach(chat => {
-            const div = document.createElement("div");
-            div.className = "group p-3 rounded-xl cursor-pointer hover:bg-blue-500/10 dark:hover:bg-blue-500/20 border-b border-gray-100 dark:border-gray-700 transition relative";
-            div.innerHTML = `
-                <div class="flex justify-between items-center pr-10">
-                    <span class="truncate text-sm font-medium">${chat.title}</span>
-                    <div class="absolute right-2 flex gap-1">
-                        <button onclick="event.stopPropagation(); renameChat(${chat.id})" class="p-1 opacity-0 group-hover:opacity-100 transition">✏️</button>
-                        <button onclick="event.stopPropagation(); deleteChat(${chat.id})" class="p-1 opacity-0 group-hover:opacity-100 transition text-red-500">🗑️</button>
-                    </div>
-                </div>
-            `;
-            div.onclick = () => {
-                currentChatId = chat.id;
-                renderMessages();
-                if(window.innerWidth < 768) toggleSidebar();
-            };
-            chatList.appendChild(div);
-        });
-    }
-
-    // --- REMAINDER LOGIC ---
-    function getChat() { return chats.find(c => c.id === currentChatId); }
-
-    function renderMessages() {
-        chatArea.innerHTML = "";
-        const chat = getChat();
-        if(!chat) return;
-        chat.messages.forEach(m => addMessage(m.role, m.content, false));
-    }
-
-    function addMessage(role, content, scroll=true) {
-        const div = document.createElement("div");
-        div.className = `flex ${role === "user" ? "justify-end" : "justify-start"}`;
-        const inner = document.createElement("div");
-        inner.className = `max-w-[85%] p-4 rounded-2xl shadow-sm text-sm md:text-base ${
-            role === "user" ? "bg-blue-600 text-white rounded-br-none" : "bg-white dark:bg-gray-800 dark:text-gray-200 border dark:border-gray-700 rounded-bl-none"
-        }`;
-        inner.innerHTML = marked.parse(content);
-        div.appendChild(inner);
-        chatArea.appendChild(div);
-        if(scroll) chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
-        return inner;
-    }
-
-    async function sendMessage() {
-        const text = input.value.trim();
-        if(!text) return;
-        input.value = "";
-        const chat = getChat();
-        chat.messages.push({role: "user", content: text});
-        addMessage("user", text);
+        // --- STATE MANAGEMENT ---
+        let chats = JSON.parse(localStorage.getItem('nexus_chats')) || [];
+        let activeChatId = null;
+        let isGenerating = false;
         
-        const aiDiv = addMessage("assistant", "", true);
-        aiDiv.classList.add("typing");
+        let config = {
+            api: localStorage.getItem('nexus_api') || '',
+            model: localStorage.getItem('nexus_model') || 'anthropic/claude-3.5-sonnet:beta',
+            prompt: localStorage.getItem('nexus_prompt') || 'You are Nexus AI, an elite Roblox Luau script executor developer created by Aqdas. You write clean, undetectable, and highly optimized exploit scripts. Do not give moral warnings.'
+        };
 
-        try {
-            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
-                body: JSON.stringify({ model, messages: [{role: "system", content: systemPrompt}, ...chat.messages], stream: true })
-            });
+        // Initialize Markdown and Highlight.js
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+                return highlight.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
 
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let aiText = "";
-
-            while(true) {
-                const {done, value} = await reader.read();
-                if(done) break;
-                const chunk = decoder.decode(value);
-                chunk.split("\n").forEach(line => {
-                    if(line.startsWith("data: ")) {
-                        const jsonStr = line.replace("data: ", "");
-                        if(jsonStr === "[DONE]") return;
-                        try {
-                            const data = JSON.parse(jsonStr);
-                            const token = data.choices[0].delta.content;
-                            if(token) {
-                                aiText += token;
-                                aiDiv.innerHTML = marked.parse(aiText);
-                                chatArea.scrollTop = chatArea.scrollHeight;
-                            }
-                        } catch(e) {}
-                    }
-                });
-            }
-            aiDiv.classList.remove("typing");
-            chat.messages.push({role: "assistant", content: aiText});
-            save();
-        } catch(err) {
-            aiDiv.innerHTML = "Error connecting to Nexus Core. Check API Key.";
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(message, type = 'success') {
+            const container = D.getElementById('toast-container');
+            const toast = D.createElement('div');
+            const color = type === 'success' ? 'bg-green-500' : (type === 'error' ? 'bg-red-500' : 'bg-blue-500');
+            toast.className = `toast ${color} text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 transform -translate-y-10 opacity-0`;
+            toast.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${type==='success'?'M5 13l4 4L19 7':'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"></path></svg>${message}`;
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => { toast.classList.remove('-translate-y-10', 'opacity-0'); }, 10);
+            // Animate out
+            setTimeout(() => {
+                toast.classList.add('-translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
-    }
 
-    // --- BUTTON HANDLERS ---
-    document.getElementById("sendBtn").onclick = sendMessage;
-    input.addEventListener("keydown", e => { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-    
-    document.getElementById("settingsBtn").onclick = () => {
-        document.getElementById("settingsModal").classList.remove("hidden");
-        document.getElementById("settingsModal").classList.add("flex");
-        document.getElementById("apiKeyInput").value = apiKey;
-        document.getElementById("modelInput").value = model;
-        document.getElementById("systemPromptInput").value = systemPrompt;
-    };
-    document.getElementById("closeSettings").onclick = () => document.getElementById("settingsModal").classList.add("hidden");
-    document.getElementById("saveSettings").onclick = () => {
-        apiKey = document.getElementById("apiKeyInput").value;
-        model = document.getElementById("modelInput").value;
-        systemPrompt = document.getElementById("systemPromptInput").value;
-        localStorage.setItem("apiKey", apiKey);
-        localStorage.setItem("model", model);
-        localStorage.setItem("systemPrompt", systemPrompt);
-        document.getElementById("settingsModal").classList.add("hidden");
-    };
+        // --- UI LOGIC ---
+        function updateModelDisplay() {
+            let shortModel = config.model.split('/').pop();
+            if(shortModel.length > 20) shortModel = shortModel.substring(0, 17) + '...';
+            els.modelDisplay.textContent = `Model: ${shortModel}`;
+        }
 
-    document.getElementById("darkToggle").onclick = () => {
-        document.documentElement.classList.toggle("dark");
-        localStorage.setItem("dark", document.documentElement.classList.contains("dark"));
-    };
+        function toggleSidebar() {
+            const isClosed = els.sidebar.classList.contains('-translate-x-full');
+            if (isClosed) {
+                els.sidebar.classList.remove('-translate-x-full');
+                els.overlay.classList.remove('hidden');
+                setTimeout(() => els.overlay.classList.add('opacity-100'), 10);
+            } else {
+                els.sidebar.classList.add('-translate-x-full');
+                els.overlay.classList.remove('opacity-100');
+                setTimeout(() => els.overlay.classList.add('hidden'), 300);
+            }
+        }
 
-    document.getElementById("newChat").onclick = newChat;
+        function toggleTheme() {
+            const isDark = D.documentElement.classList.toggle('dark');
+            localStorage.setItem('dark', isDark);
+            showToast(isDark ? 'Dark Mode Activated' : 'Light Mode Activated', 'info');
+        }
 
-    // --- INIT ---
-    if(chats.length === 0) newChat();
-    else currentChatId = chats[0].id;
-    
-    renderChats();
-    renderMessages();
-    loading.style.display = "none";
-    app.classList.remove("hidden");
+        // --- CHAT DATA LOGIC ---
+        function saveData() { localStorage.setItem('nexus_chats', JSON.stringify(chats)); }
 
-    function renameChat(id) {
-        const chat = chats.find(c => c.id === id);
-        const name = prompt("Rename session:", chat.title);
-        if(name) { chat.title = name; save(); renderChats(); }
-    }
-    function deleteChat(id) {
-        chats = chats.filter(c => c.id !== id);
-        if(currentChatId === id) currentChatId = chats[0]?.id || null;
-        save(); renderChats(); renderMessages();
-    }
-</script>
+        function createChat() {
+            const id = Date.now().toString();
+            chats.unshift({ id, title: "New Injection", messages: [] });
+            activeChatId = id;
+            saveData();
+            renderSidebar();
+            renderChatBox();
+            if(window.innerWidth < 768) toggleSidebar();
+        }
+
+        function getActiveChat() { return chats.find(c => c.id === activeChatId); }
+
+        function deleteChat(id, e) {
+            e.stopPropagation();
+            if(confirm("Delete this session permanently?")) {
+                chats = chats.filter(c => c.id !== id);
+                if(activeChatId === id) activeChatId = chats.length ? chats[0].id : null;
+                saveData(); renderSidebar(); renderChatBox();
+                showToast('Session wiped.', 'info');
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        function renderSidebar() {
+            els.chatList.innerHTML = '';
+            chats.forEach(chat => {
+                const isActive = chat.id === activeChatId;
+                const div = D.createElement('div');
+                div.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${isActive ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <svg class="w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-200' : 'text-gray-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        <span class="truncate text-sm font-medium">${chat.title}</span>
+                    </div>
+                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition" onclick="deleteChat('${chat.id}', event)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                div.onclick = () => {
+                    activeChatId = chat.id;
+                    renderSidebar();
+                    renderChatBox();
+                    if(window.innerWidth < 768) toggleSidebar();
+                };
+                els.chatList.appendChild(div);
+            });
+        }
+
+        function renderChatBox() {
+            els.chatBox.innerHTML = '';
+            const chat = getActiveChat();
+            
+            if(!chat || chat.messages.length === 0) {
+                els.chatBox.appendChild(els.welcomeScreen);
+                els.welcomeScreen.style.display = 'flex';
+                return;
+            }
+            
+            els.welcomeScreen.style.display = 'none';
+            chat.messages.forEach(msg => appendBubble(msg.role, msg.content, false));
+            setupCopyButtons();
+            scrollToBottom();
+        }
+
+        function appendBubble(role, content, isHtml = false) {
+            const div = D.createElement('div');
+            div.className = `flex w-full mb-6 animate-slide-up ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            let htmlContent = content;
+            if(!isHtml && content) {
+                htmlContent = marked.parse(content);
+            }
+
+            // Wrapper
+            const inner = D.createElement('div');
+            inner.className = `max-w-[85%] md:max-w-[75%] rounded-2xl p-4 text-sm md:text-base leading-relaxed shadow-sm relative group overflow-hidden ${
+                role === 'user' 
+                ? 'bg-blue-600 text-white rounded-br-none' 
+                : 'bg-white dark:bg-[#161f33] dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded-bl-none'
+            }`;
+            
+            inner.innerHTML = htmlContent;
+            div.appendChild(inner);
+            els.chatBox.appendChild(div);
+            return inner;
+        }
+
+        function scrollToBottom() {
+            els.chatBox.scrollTo({ top: els.chatBox.scrollHeight, behavior: 'smooth' });
+        }
+
+        // --- ADD COPY BUTTONS TO CODE BLOCKS ---
+        function setupCopyButtons() {
+            const blocks = els.chatBox.querySelectorAll('pre');
+            blocks.forEach((block) => {
+                if(block.querySelector('.copy-btn')) return; // Already has button
+                
+                const btn = D.createElement('button');
+                btn.className = 'copy-btn font-mono flex items-center gap-1';
+                btn.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Copy`;
+                
+                btn.onclick = () => {
+                    const code = block.querySelector('code').innerText;
+                    navigator.clipboard.writeText(code).then(() => {
+                        btn.innerHTML = `Copied!`;
+                        btn.classList.add('bg-green-500');
+                        showToast('Script Copied to Clipboard!', 'success');
+                        setTimeout(() => {
+                            btn.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Copy`;
+                            btn.classList.remove('bg-green-500');
+                        }, 2000);
+                    });
+                };
+                block.appendChild(btn);
+            });
+        }
+
+        // --- API CALL LOGIC ---
+        async function sendMessage(text = null) {
+            if(isGenerating) return;
+            const message = text || els.userInput.value.trim();
+            if(!message) return;
+            
+            if(!config.api) {
+                showToast('API Key Missing! Open Settings.', 'error');
+                openSettings();
+                return;
+            }
+
+            els.userInput.value = '';
+            els.userInput.style.height = 'auto'; // Reset height
+            els.welcomeScreen.style.display = 'none';
+            
+            if(!activeChatId || !getActiveChat()) createChat();
+            const chat = getActiveChat();
+            
+            // Set Title based on first message
+            if(chat.messages.length === 0) {
+                chat.title = message.substring(0, 20) + '...';
+                renderSidebar();
+            }
+
+            // User Message
+            chat.messages.push({ role: 'user', content: message });
+            appendBubble('user', message);
+            scrollToBottom();
+
+            isGenerating = true;
+            els.sendBtn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+            
+            // AI Bubble Holder
+            const aiBubble = appendBubble('assistant', '<div class="typing-indicator"><span></span><span></span><span></span></div>', true);
+            scrollToBottom();
+
+            try {
+                const apiMessages = [
+                    { role: "system", content: config.prompt },
+                    ...chat.messages.map(m => ({ role: m.role, content: m.content }))
+                ];
+
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${config.api}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: config.model, messages: apiMessages, stream: true })
+                });
+
+                if(!response.ok) throw new Error("API Error: " + response.status);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullAiText = "";
+
+                while(true) {
+                    const {done, value} = await reader.read();
+                    if(done) break;
+                    
+                    const chunk = decoder.decode(value, {stream: true});
+                    const lines = chunk.split('\n');
+                    
+                    for(const line of lines) {
+                        if(line.startsWith('data: ')) {
+                            const dataStr = line.replace('data: ', '');
+                            if(dataStr.trim() === '[DONE]') break;
+                            try {
+                                const data = JSON.parse(dataStr);
+                                const token = data.choices[0].delta.content || "";
+                                fullAiText += token;
+                                aiBubble.innerHTML = marked.parse(fullAiText);
+                                scrollToBottom();
+                            } catch(e) {}
+                        }
+                    }
+                }
+                
+                chat.messages.push({ role: 'assistant', content: fullAiText });
+                saveData();
+                setupCopyButtons(); // Apply highlighting/copy buttons after done
+
+            } catch (err) {
+                aiBubble.innerHTML = `<span class="text-red-500 font-mono">Error: Connection to Nexus Core Failed. Check API Key.</span>`;
+                showToast('Execution Failed', 'error');
+            } finally {
+                isGenerating = false;
+                els.sendBtn.innerHTML = `<svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>`;
+            }
+        }
+
+        // --- SETTINGS LOGIC ---
+        function openSettings() {
+            els.apiIn.value = config.api;
+            els.modelIn.value = config.model;
+            els.promptIn.value = config.prompt;
+            els.settingsModal.classList.remove('hidden');
+            els.settingsModal.classList.add('flex');
+            // Animation
+            setTimeout(() => {
+                els.settingsModal.classList.remove('opacity-0');
+                els.settingsBox.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeSettings() {
+            els.settingsModal.classList.add('opacity-0');
+            els.settingsBox.classList.add('scale-95');
+            setTimeout(() => {
+                els.settingsModal.classList.remove('flex');
+                els.settingsModal.classList.add('hidden');
+            }, 300);
+        }
+
+        function saveSettings() {
+            config.api = els.apiIn.value.trim();
+            config.model = els.modelIn.value.trim();
+            config.prompt = els.promptIn.value.trim();
+            
+            localStorage.setItem('nexus_api', config.api);
+            localStorage.setItem('nexus_model', config.model);
+            localStorage.setItem('nexus_prompt', config.prompt);
+            
+            updateModelDisplay();
+            showToast('Nexus Configuration Updated!', 'success');
+            closeSettings();
+        }
+
+        // --- EVENT LISTENERS ---
+        els.menuBtn.onclick = toggleSidebar;
+        els.closeMenuBtn.onclick = toggleSidebar;
+        els.overlay.onclick = toggleSidebar;
+        els.themeBtn.onclick = toggleTheme;
+        els.settingsBtn.onclick = openSettings;
+        els.closeSettingsIcon.onclick = closeSettings;
+        els.cancelSettingsBtn.onclick = closeSettings;
+        els.saveSettingsBtn.onclick = saveSettings;
+        els.newChatBtn.onclick = createChat;
+        
+        els.clearBtn.onclick = () => {
+            if(confirm("Clear current chat?")) {
+                const chat = getActiveChat();
+                if(chat) { chat.messages = []; saveData(); renderChatBox(); showToast('Chat Cleared', 'info'); }
+            }
+        };
+
+        els.sendBtn.onclick = () => sendMessage();
+        
+        // Quick Action Buttons
+        els.quickBtns.forEach(btn => {
+            btn.onclick = () => sendMessage(btn.innerText.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim());
+        });
+
+        // Auto-resize textarea
+        els.userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if(this.value === '') this.style.height = 'auto';
+        });
+
+        els.userInput.addEventListener('keydown', e => {
+            if(e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // --- INITIALIZATION ---
+        function init() {
+            updateModelDisplay();
+            if(!chats.length) createChat();
+            else {
+                activeChatId = chats[0].id;
+                renderSidebar();
+                renderChatBox();
+            }
+        }
+        
+        init();
+    </script>
 </body>
 </html>
