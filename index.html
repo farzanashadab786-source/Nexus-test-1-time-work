@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS V9 | Universal Console</title>
-    
+    <title>NEXUS V10 | Admin Aqdas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
@@ -12,194 +11,174 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@300;500;700;900&display=swap');
-
-        body {
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Space+Grotesk:wght@300;700;900&display=swap');
+        
+        /* 🔥 FULL SCREEN FIX */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background: #020205; 
             font-family: 'Space Grotesk', sans-serif;
-            background: #020205;
-            color: white;
-            height: 100vh;
-            overflow: hidden;
-            background-image: radial-gradient(circle at 50% 50%, #0f172a 0%, #020205 100%);
         }
 
-        .glass { background: rgba(15, 15, 20, 0.7); backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.05); }
-        
-        /* 1️⃣ Input Bar Position - Thoda Uupar */
-        .input-container { bottom: 30px; }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh; /* Dynamic Viewport Height for Mobile */
+        }
 
-        /* Bubbles with Depth */
-        .ai-bubble { background: rgba(20, 20, 30, 0.8); border-left: 3px solid #22d3ee; border-radius: 4px 18px 18px 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .user-bubble { background: linear-gradient(135deg, #0891b2, #22d3ee); color: #000; font-weight: 700; border-radius: 18px 4px 18px 18px; box-shadow: 0 10px 25px rgba(34,211,238,0.3); }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
 
-        /* Animations */
-        @keyframes msgPop { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .message-anim { animation: msgPop 0.3s ease-out forwards; }
+        /* Chat Display - Fixed Scrolling Area */
+        #chatDisplay {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
 
-        /* Code Block Styling */
-        pre { background: #000 !important; border: 1px solid #1e293b; padding: 40px 15px 15px !important; border-radius: 12px; position: relative; overflow-x: auto; margin: 15px 0; }
-        .copy-btn { position: absolute; top: 10px; right: 10px; background: #22d3ee; color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+        /* 🚀 INPUT DOCK - Uupar and Inside Frame */
+        .input-dock {
+            padding: 15px;
+            background: linear-gradient(to top, #020205, transparent);
+        }
 
-        /* Scroll Glow */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #22d3ee; border-radius: 10px; }
+        .input-box-wrapper {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1.5px solid rgba(34, 211, 238, 0.3);
+            border-radius: 18px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 8px 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(34, 211, 238, 0.05);
+        }
 
-        #sidebar { z-index: 100; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none !important;
+            outline: none !important;
+            color: white;
+            font-size: 14px;
+            padding: 8px 0;
+            max-height: 120px;
+            resize: none;
+        }
+
+        /* Bubbles */
+        .ai-msg { background: #1e293b; border-left: 3px solid #06b6d4; border-radius: 4px 18px 18px 18px; color: #e2e8f0; }
+        .user-msg { background: #0891b2; color: white; border-radius: 18px 4px 18px 18px; font-weight: 600; }
+
+        pre { background: #000 !important; border-radius: 10px; padding: 35px 12px 12px !important; position: relative; font-size: 13px; margin: 10px 0; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; background: #06b6d4; color: black; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
     </style>
 </head>
-<body class="flex">
+<body>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-80 glass flex flex-col p-6 transform -translate-x-full md:translate-x-0 md:static border-r border-white/5">
-        <div class="flex items-center gap-3 mb-8">
-            <div class="w-10 h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <i class="fa-solid fa-atom text-black text-xl"></i>
-            </div>
-            <h1 class="text-2xl font-black italic tracking-tighter uppercase">Nexus <span class="text-cyan-400">V9</span></h1>
-        </div>
-
-        <div class="mb-4">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Gateway Type</label>
-            <select id="apiType" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-cyan-300 outline-none">
-                <option value="openrouter">OpenRouter (Universal)</option>
-                <option value="deepseek">DeepSeek Direct</option>
-            </select>
-        </div>
-
-        <div class="mb-6">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Active Model ID</label>
-            <input id="modelInput" type="text" placeholder="e.g. deepseek/deepseek-chat" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-cyan-300 font-mono outline-none focus:border-cyan-500">
-        </div>
-
-        <div class="flex-1 overflow-y-auto space-y-2" id="chatHistory">
-            <div class="text-[10px] text-gray-600 font-bold uppercase tracking-widest mb-2 px-2">Recent Logs</div>
-            </div>
-
-        <button onclick="openSettings()" class="mt-4 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold hover:bg-cyan-500/20 transition">
-            <i class="fa-solid fa-sliders mr-2"></i> SYSTEM CONFIG
-        </button>
-    </aside>
-
-    <main class="flex-1 flex flex-col relative h-full">
-        <header class="h-16 glass flex items-center justify-between px-6 border-b border-white/5">
-            <button onclick="toggleSidebar()" class="md:hidden text-cyan-400"><i class="fa-solid fa-bars-staggered"></i></button>
+    <div class="main-container">
+        <header class="h-14 glass flex items-center justify-between px-5 shrink-0">
+            <button onclick="toggleSidebar()" class="text-cyan-400"><i class="fa-solid fa-bars-staggered"></i></button>
             <div class="flex items-center gap-2">
-                <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_cyan]"></div>
-                <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-widest">Neural Link Active</span>
+                <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_cyan]"></span>
+                <span class="text-[10px] font-black tracking-widest text-cyan-500 uppercase">Nexus Terminal</span>
             </div>
-            <button onclick="clearChat()" class="text-gray-600 hover:text-red-400 transition"><i class="fa-solid fa-trash-can"></i></button>
+            <button onclick="openSettings()" class="text-gray-400"><i class="fa-solid fa-microchip"></i></button>
         </header>
 
-        <div id="chatDisplay" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 pb-44">
-            <div id="welcome" class="text-center opacity-10 mt-20">
-                <i class="fa-solid fa-shield-halved text-8xl mb-4"></i>
-                <h2 class="text-4xl font-black uppercase">Mainframe Access</h2>
+        <div id="chatDisplay" class="p-4 space-y-6">
+            <div id="welcome" class="text-center opacity-20 mt-10">
+                <i class="fa-solid fa-shield-halved text-6xl mb-3 text-cyan-500"></i>
+                <h2 class="text-xl font-black uppercase tracking-widest text-white">System Mainframe</h2>
             </div>
         </div>
 
-        <div class="absolute w-full input-container px-4 md:px-10">
-            <div class="max-w-4xl mx-auto glass rounded-2xl p-2 flex items-end gap-2 border border-cyan-500/20 shadow-2xl">
-                <textarea id="userInput" rows="1" placeholder="Enter command sequence..." class="flex-1 bg-transparent border-none focus:ring-0 p-3 text-sm text-white font-mono resize-none"></textarea>
-                <button id="sendBtn" class="w-12 h-12 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl flex items-center justify-center transition active:scale-95 shadow-lg shadow-cyan-500/20">
-                    <i class="fa-solid fa-paper-plane text-lg"></i>
+        <div class="input-dock shrink-0">
+            <div class="max-w-4xl mx-auto input-box-wrapper">
+                <button class="w-8 h-8 flex items-center justify-center text-gray-500"><i class="fa-solid fa-plus"></i></button>
+                <textarea id="userInput" rows="1" placeholder="Type command..."></textarea>
+                <button id="sendBtn" class="w-10 h-10 bg-cyan-500 text-black rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
+                    <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </div>
+            <p class="text-[8px] text-center text-gray-600 mt-2 font-mono uppercase tracking-widest">Authorized Access Only - Admin Aqdas</p>
         </div>
-    </main>
+    </div>
 
-    <div id="settingsModal" class="fixed inset-0 hidden items-center justify-center z-[200] bg-black/90 backdrop-blur-xl p-4">
-        <div class="glass w-full max-w-lg rounded-3xl p-8 space-y-5 border border-cyan-500/30">
-            <h3 class="text-2xl font-black text-cyan-400">CORE CONFIG</h3>
-            
-            <div>
-                <label class="text-[10px] font-bold text-gray-500 mb-2 block uppercase tracking-widest">System Prompt (God Mode)</label>
-                <textarea id="systemPrompt" rows="4" placeholder="You are a professional coder..." class="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-white focus:border-cyan-500 outline-none"></textarea>
-            </div>
-
-            <div>
-                <label class="text-[10px] font-bold text-gray-500 mb-2 block uppercase tracking-widest">API Bearer Key</label>
-                <input id="apiKey" type="password" placeholder="sk-..." class="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-cyan-300 font-mono focus:border-cyan-500 outline-none">
-            </div>
-
-            <button onclick="saveSettings()" class="w-full py-4 bg-cyan-500 rounded-xl font-black text-black tracking-widest shadow-lg shadow-cyan-500/40">SAVE & INITIALIZE</button>
+    <div id="settingsModal" class="fixed inset-0 hidden items-center justify-center z-[100] bg-black/90 backdrop-blur-xl p-6">
+        <div class="glass w-full max-w-sm rounded-3xl p-6 space-y-4">
+            <h3 class="text-lg font-black text-cyan-400">CORE_CONFIG</h3>
+            <textarea id="systemPrompt" rows="3" placeholder="System Prompt..." class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none"></textarea>
+            <input id="apiKey" type="password" placeholder="API Key (sk-...)" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-cyan-300 outline-none">
+            <input id="modelInput" type="text" placeholder="Model ID" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none">
+            <select id="apiType" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-cyan-300 outline-none">
+                <option value="openrouter">OpenRouter</option>
+                <option value="deepseek">DeepSeek Direct</option>
+            </select>
+            <button onclick="saveSettings()" class="w-full py-3 bg-cyan-500 rounded-xl font-black text-black text-sm shadow-lg shadow-cyan-500/30">INITIALIZE</button>
         </div>
     </div>
 
     <script>
         const chatDisplay = document.getElementById('chatDisplay');
         const userInput = document.getElementById('userInput');
-        const modelInput = document.getElementById('modelInput');
-        const systemPromptInput = document.getElementById('systemPrompt');
-        const apiTypeSelect = document.getElementById('apiType');
-
+        
         marked.setOptions({ highlight: (code) => hljs.highlightAuto(code).value });
         const renderer = new marked.Renderer();
         renderer.code = (code, lang) => `<pre><button class="copy-btn" onclick="copyCode(this)">COPY</button><code class="language-${lang || 'lua'}">${code}</code></pre>`;
         marked.use({ renderer });
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-        function copyCode(btn) { navigator.clipboard.writeText(btn.nextElementSibling.innerText); btn.innerText = "COPIED"; setTimeout(() => btn.innerText = "COPY", 2000); }
-
+        function copyCode(btn) { navigator.clipboard.writeText(btn.nextElementSibling.innerText); btn.innerText = "DONE"; setTimeout(() => btn.innerText = "COPY", 2000); }
         function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); document.getElementById('settingsModal').classList.add('flex'); }
         function saveSettings() {
-            localStorage.setItem('nx9_key', document.getElementById('apiKey').value);
-            localStorage.setItem('nx9_sys', systemPromptInput.value);
-            localStorage.setItem('nx9_model', modelInput.value);
-            localStorage.setItem('nx9_type', apiTypeSelect.value);
+            localStorage.setItem('nx_key', document.getElementById('apiKey').value);
+            localStorage.setItem('nx_sys', document.getElementById('systemPrompt').value);
+            localStorage.setItem('nx_mod', document.getElementById('modelInput').value);
+            localStorage.setItem('nx_typ', document.getElementById('apiType').value);
             document.getElementById('settingsModal').classList.add('hidden');
         }
 
         async function sendMessage() {
             const text = userInput.value.trim();
-            const key = localStorage.getItem('nx9_key');
-            const sys = localStorage.getItem('nx9_sys') || "Direct and concise.";
-            const model = modelInput.value || "google/gemini-2.0-flash-exp:free";
-            const apiType = apiTypeSelect.value;
-
+            const key = localStorage.getItem('nx_key');
             if(!text || !key) return openSettings();
 
             document.getElementById('welcome').classList.add('hidden');
-            userInput.value = '';
-            userInput.style.height = 'auto';
+            userInput.value = ''; userInput.style.height = 'auto';
 
-            chatDisplay.innerHTML += `<div class="flex justify-end mb-6 message-anim"><div class="user-bubble p-4 max-w-[85%] text-sm">${text}</div></div>`;
-            
+            chatDisplay.innerHTML += `<div class="flex justify-end mb-4"><div class="user-msg p-3 max-w-[85%] text-sm shadow-md">${text}</div></div>`;
             const loadId = 'load-' + Date.now();
-            chatDisplay.innerHTML += `<div id="${loadId}" class="flex justify-start mb-6 message-anim"><div class="ai-bubble p-4 text-[10px] font-mono text-cyan-400 animate-pulse">EXECUTING QUERY...</div></div>`;
-            chatDisplay.scrollTo({ top: chatDisplay.scrollHeight, behavior: 'smooth' });
+            chatDisplay.innerHTML += `<div id="${loadId}" class="flex justify-start mb-4"><div class="ai-msg p-3 text-[10px] font-mono text-cyan-400 animate-pulse">PROCESSING...</div></div>`;
+            chatDisplay.scrollTo(0, chatDisplay.scrollHeight);
 
-            // 🌐 Universal Endpoint Logic
-            const endpoint = apiType === 'deepseek' ? "https://api.deepseek.com/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
+            const endpoint = localStorage.getItem('nx_typ') === 'deepseek' ? "https://api.deepseek.com/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
 
             try {
                 const res = await fetch(endpoint, {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        model: model,
-                        messages: [{role: "system", content: sys}, {role: "user", content: text}]
+                        model: localStorage.getItem('nx_mod') || "google/gemini-2.0-flash-exp:free",
+                        messages: [{role: "system", content: localStorage.getItem('nx_sys') || ""}, {role: "user", content: text}]
                     })
                 });
                 const data = await res.json();
                 document.getElementById(loadId).remove();
-                
-                const aiResponse = data.choices[0].message.content;
-                chatDisplay.innerHTML += `<div class="flex justify-start mb-6 message-anim"><div class="ai-bubble p-5 max-w-[95%] text-sm leading-relaxed">${marked.parse(aiResponse)}</div></div>`;
+                chatDisplay.innerHTML += `<div class="flex justify-start mb-4"><div class="ai-msg p-4 max-w-[95%] text-sm leading-relaxed">${marked.parse(data.choices[0].message.content)}</div></div>`;
                 hljs.highlightAll();
-            } catch (e) { document.getElementById(loadId).innerText = "FAIL: Check API Key/Endpoint"; }
-            chatDisplay.scrollTo({ top: chatDisplay.scrollHeight, behavior: 'smooth' });
+                chatDisplay.scrollTo(0, chatDisplay.scrollHeight);
+            } catch (e) { document.getElementById(loadId).innerText = "ERROR: CHECK CONFIG"; }
         }
 
         userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
         document.getElementById('sendBtn').onclick = sendMessage;
-        userInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-        
         window.onload = () => {
-            document.getElementById('apiKey').value = localStorage.getItem('nx9_key') || '';
-            systemPromptInput.value = localStorage.getItem('nx9_sys') || '';
-            modelInput.value = localStorage.getItem('nx9_model') || 'google/gemini-2.0-flash-exp:free';
-            apiTypeSelect.value = localStorage.getItem('nx9_type') || 'openrouter';
+            document.getElementById('apiKey').value = localStorage.getItem('nx_key') || '';
+            document.getElementById('systemPrompt').value = localStorage.getItem('nx_sys') || '';
+            document.getElementById('modelInput').value = localStorage.getItem('nx_mod') || 'google/gemini-2.0-flash-exp:free';
+            document.getElementById('apiType').value = localStorage.getItem('nx_typ') || 'openrouter';
         }
-        function clearChat() { chatDisplay.innerHTML = ''; }
     </script>
 </body>
 </html>
