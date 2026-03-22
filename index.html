@@ -3,181 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS V10 | Admin Aqdas</title>
+    <title>NEXUS V11 | Raza & Aqdas Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Space+Grotesk:wght@300;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&display=swap');
         
-        /* 🔥 FULL SCREEN FIX */
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-            background: #020205; 
-            font-family: 'Space Grotesk', sans-serif;
+        body { background: #050508; color: white; font-family: 'Space Grotesk', sans-serif; height: 100dvh; overflow: hidden; }
+        .glass { background: rgba(15, 20, 35, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(0, 255, 255, 0.1); }
+        
+        /* 🔥 SideBar Fix - Force Visibility */
+        #sidebar { 
+            z-index: 999 !important; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 20px 0 50px rgba(0,0,0,0.8);
         }
 
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            height: 100dvh; /* Dynamic Viewport Height for Mobile */
-        }
+        /* Image Generation Card */
+        .gen-image { border-radius: 15px; border: 2px solid #22d3ee; margin-top: 10px; width: 100%; max-width: 300px; box-shadow: 0 0 20px rgba(34, 211, 238, 0.4); }
+        
+        /* Gallery Storage UI */
+        #gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; }
+        .thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid #333; }
 
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
-
-        /* Chat Display - Fixed Scrolling Area */
-        #chatDisplay {
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 20px;
-        }
-
-        /* 🚀 INPUT DOCK - Uupar and Inside Frame */
-        .input-dock {
-            padding: 15px;
-            background: linear-gradient(to top, #020205, transparent);
-        }
-
-        .input-box-wrapper {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1.5px solid rgba(34, 211, 238, 0.3);
-            border-radius: 18px;
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-            padding: 8px 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(34, 211, 238, 0.05);
-        }
-
-        textarea {
-            flex: 1;
-            background: transparent;
-            border: none !important;
-            outline: none !important;
-            color: white;
-            font-size: 14px;
-            padding: 8px 0;
-            max-height: 120px;
-            resize: none;
-        }
-
-        /* Bubbles */
-        .ai-msg { background: #1e293b; border-left: 3px solid #06b6d4; border-radius: 4px 18px 18px 18px; color: #e2e8f0; }
-        .user-msg { background: #0891b2; color: white; border-radius: 18px 4px 18px 18px; font-weight: 600; }
-
-        pre { background: #000 !important; border-radius: 10px; padding: 35px 12px 12px !important; position: relative; font-size: 13px; margin: 10px 0; }
-        .copy-btn { position: absolute; top: 8px; right: 8px; background: #06b6d4; color: black; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+        .ai-bubble { background: #111827; border-left: 4px solid #06b6d4; border-radius: 0 15px 15px 15px; }
+        .user-bubble { background: #0891b2; border-radius: 15px 15px 0 15px; }
     </style>
 </head>
-<body>
+<body class="flex flex-col">
 
-    <div class="main-container">
-        <header class="h-14 glass flex items-center justify-between px-5 shrink-0">
-            <button onclick="toggleSidebar()" class="text-cyan-400"><i class="fa-solid fa-bars-staggered"></i></button>
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_cyan]"></span>
-                <span class="text-[10px] font-black tracking-widest text-cyan-500 uppercase">Nexus Terminal</span>
-            </div>
-            <button onclick="openSettings()" class="text-gray-400"><i class="fa-solid fa-microchip"></i></button>
-        </header>
-
-        <div id="chatDisplay" class="p-4 space-y-6">
-            <div id="welcome" class="text-center opacity-20 mt-10">
-                <i class="fa-solid fa-shield-halved text-6xl mb-3 text-cyan-500"></i>
-                <h2 class="text-xl font-black uppercase tracking-widest text-white">System Mainframe</h2>
-            </div>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass transform -translate-x-full flex flex-col p-5">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="font-black text-cyan-400 italic">NEXUS VAULT</h2>
+            <button onclick="toggleSidebar()" class="text-white"><i class="fa-solid fa-xmark"></i></button>
         </div>
+        
+        <div class="flex-1 overflow-y-auto">
+            <p class="text-[10px] uppercase font-bold text-gray-500 mb-3">Wallpaper Gallery</p>
+            <div id="gallery">
+                </div>
+        </div>
+        
+        <div class="mt-4 p-4 bg-cyan-950/30 rounded-xl border border-cyan-500/20">
+            <p class="text-[10px] text-cyan-300">RAZA_MOD: READY</p>
+        </div>
+    </aside>
 
-        <div class="input-dock shrink-0">
-            <div class="max-w-4xl mx-auto input-box-wrapper">
-                <button class="w-8 h-8 flex items-center justify-center text-gray-500"><i class="fa-solid fa-plus"></i></button>
-                <textarea id="userInput" rows="1" placeholder="Type command..."></textarea>
-                <button id="sendBtn" class="w-10 h-10 bg-cyan-500 text-black rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </div>
-            <p class="text-[8px] text-center text-gray-600 mt-2 font-mono uppercase tracking-widest">Authorized Access Only - Admin Aqdas</p>
+    <header class="h-16 glass flex items-center justify-between px-6 shrink-0 relative z-50">
+        <button onclick="toggleSidebar()" class="text-cyan-400 text-xl"><i class="fa-solid fa-bars-staggered"></i></button>
+        <div class="text-center">
+            <h1 class="text-lg font-black italic tracking-tighter">NEXUS <span class="text-cyan-400">V11</span></h1>
+        </div>
+        <button onclick="openConfig()" class="text-gray-400"><i class="fa-solid fa-gear"></i></button>
+    </header>
+
+    <main id="chatDisplay" class="flex-1 overflow-y-auto p-4 space-y-6 pb-28">
+        <div class="text-center opacity-20 py-20">
+            <i class="fa-solid fa-wand-magic-sparkles text-6xl mb-4 text-cyan-500"></i>
+            <h2 class="text-2xl font-black uppercase tracking-widest">Image & Logic Engine</h2>
+            <p class="text-xs mt-2 font-mono italic">"Create Wallpaper" or "Write Code"</p>
+        </div>
+    </main>
+
+    <div class="fixed bottom-6 w-full px-4 z-50">
+        <div class="max-w-2xl mx-auto glass rounded-2xl p-2 flex items-end gap-2 border-cyan-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+            <textarea id="userInput" rows="1" placeholder="Ask Nexus or 'Generate wallpaper of...'" class="flex-1 bg-transparent border-none focus:ring-0 p-3 text-sm text-white resize-none"></textarea>
+            <button id="sendBtn" class="w-12 h-12 bg-cyan-600 rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
+                <i class="fa-solid fa-bolt-lightning text-white"></i>
+            </button>
         </div>
     </div>
 
-    <div id="settingsModal" class="fixed inset-0 hidden items-center justify-center z-[100] bg-black/90 backdrop-blur-xl p-6">
-        <div class="glass w-full max-w-sm rounded-3xl p-6 space-y-4">
-            <h3 class="text-lg font-black text-cyan-400">CORE_CONFIG</h3>
-            <textarea id="systemPrompt" rows="3" placeholder="System Prompt..." class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none"></textarea>
-            <input id="apiKey" type="password" placeholder="API Key (sk-...)" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-cyan-300 outline-none">
-            <input id="modelInput" type="text" placeholder="Model ID" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none">
-            <select id="apiType" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-cyan-300 outline-none">
-                <option value="openrouter">OpenRouter</option>
-                <option value="deepseek">DeepSeek Direct</option>
-            </select>
-            <button onclick="saveSettings()" class="w-full py-3 bg-cyan-500 rounded-xl font-black text-black text-sm shadow-lg shadow-cyan-500/30">INITIALIZE</button>
+    <div id="configModal" class="fixed inset-0 hidden items-center justify-center z-[1000] bg-black/90 backdrop-blur-md p-6">
+        <div class="glass w-full max-w-sm rounded-3xl p-6 space-y-4 border-cyan-500/50">
+            <h3 class="text-xl font-bold text-cyan-400 italic">SYSTEM_AUTH</h3>
+            <input id="apiKey" type="password" placeholder="API KEY (DeepSeek/OpenRouter)" class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-xs text-cyan-300 outline-none">
+            <input id="modelId" type="text" placeholder="Model (e.g. google/gemini-2.0-flash-exp:free)" class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-xs text-white outline-none">
+            <button onclick="saveConfig()" class="w-full py-4 bg-cyan-600 rounded-xl font-black tracking-widest shadow-lg shadow-cyan-600/30">BOOT UP</button>
         </div>
     </div>
 
     <script>
         const chatDisplay = document.getElementById('chatDisplay');
         const userInput = document.getElementById('userInput');
-        
-        marked.setOptions({ highlight: (code) => hljs.highlightAuto(code).value });
-        const renderer = new marked.Renderer();
-        renderer.code = (code, lang) => `<pre><button class="copy-btn" onclick="copyCode(this)">COPY</button><code class="language-${lang || 'lua'}">${code}</code></pre>`;
-        marked.use({ renderer });
+        const gallery = document.getElementById('gallery');
 
-        function copyCode(btn) { navigator.clipboard.writeText(btn.nextElementSibling.innerText); btn.innerText = "DONE"; setTimeout(() => btn.innerText = "COPY", 2000); }
-        function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); document.getElementById('settingsModal').classList.add('flex'); }
-        function saveSettings() {
-            localStorage.setItem('nx_key', document.getElementById('apiKey').value);
-            localStorage.setItem('nx_sys', document.getElementById('systemPrompt').value);
-            localStorage.setItem('nx_mod', document.getElementById('modelInput').value);
-            localStorage.setItem('nx_typ', document.getElementById('apiType').value);
-            document.getElementById('settingsModal').classList.add('hidden');
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('-translate-x-full');
         }
 
-        async function sendMessage() {
+        function openConfig() { document.getElementById('configModal').classList.remove('hidden'); document.getElementById('configModal').classList.add('flex'); }
+        function saveConfig() {
+            localStorage.setItem('nx_key', document.getElementById('apiKey').value);
+            localStorage.setItem('nx_mod', document.getElementById('modelId').value);
+            document.getElementById('configModal').classList.add('hidden');
+        }
+
+        // 🎨 Image Generation Trick
+        function generateImage(prompt) {
+            const seed = Math.floor(Math.random() * 100000);
+            return `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1080&height=1920&seed=${seed}&model=flux`;
+        }
+
+        async function handleMessage() {
             const text = userInput.value.trim();
             const key = localStorage.getItem('nx_key');
-            if(!text || !key) return openSettings();
+            if(!text || !key) return openConfig();
 
-            document.getElementById('welcome').classList.add('hidden');
-            userInput.value = ''; userInput.style.height = 'auto';
+            userInput.value = '';
+            chatDisplay.innerHTML += `<div class="flex justify-end mb-4"><div class="user-bubble p-4 max-w-[80%] text-sm shadow-xl">${text}</div></div>`;
 
-            chatDisplay.innerHTML += `<div class="flex justify-end mb-4"><div class="user-msg p-3 max-w-[85%] text-sm shadow-md">${text}</div></div>`;
-            const loadId = 'load-' + Date.now();
-            chatDisplay.innerHTML += `<div id="${loadId}" class="flex justify-start mb-4"><div class="ai-msg p-3 text-[10px] font-mono text-cyan-400 animate-pulse">PROCESSING...</div></div>`;
+            // Detect if Raza bhai wants a wallpaper
+            if (text.toLowerCase().includes('wallpaper') || text.toLowerCase().includes('photo') || text.toLowerCase().includes('generate')) {
+                const imgUrl = generateImage(text);
+                chatDisplay.innerHTML += `
+                    <div class="flex justify-start mb-4">
+                        <div class="ai-bubble p-4 max-w-[90%] shadow-2xl">
+                            <p class="text-xs text-cyan-400 font-bold mb-2 uppercase">Nexus Imaging Engine:</p>
+                            <img src="${imgUrl}" class="gen-image" onload="addToVault('${imgUrl}')">
+                            <p class="text-[10px] mt-2 text-gray-400 italic">Wallpaper generated for Raza Bhai.</p>
+                        </div>
+                    </div>`;
+            } else {
+                // Regular AI Chat
+                const loadId = 'load-' + Date.now();
+                chatDisplay.innerHTML += `<div id="${loadId}" class="flex justify-start mb-4"><div class="ai-bubble p-4 text-[10px] font-mono text-cyan-400 animate-pulse tracking-widest">NEXUS THINKING...</div></div>`;
+                
+                try {
+                    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: localStorage.getItem('nx_mod') || "google/gemini-2.0-flash-exp:free",
+                            messages: [{role: "user", content: text}]
+                        })
+                    });
+                    const data = await res.json();
+                    document.getElementById(loadId).remove();
+                    chatDisplay.innerHTML += `<div class="flex justify-start mb-4"><div class="ai-bubble p-4 max-w-[95%] text-sm leading-relaxed text-gray-200">${marked.parse(data.choices[0].message.content)}</div></div>`;
+                } catch (e) { document.getElementById(loadId).innerText = "CONFIG ERROR"; }
+            }
             chatDisplay.scrollTo(0, chatDisplay.scrollHeight);
+        }
 
-            const endpoint = localStorage.getItem('nx_typ') === 'deepseek' ? "https://api.deepseek.com/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
-
-            try {
-                const res = await fetch(endpoint, {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        model: localStorage.getItem('nx_mod') || "google/gemini-2.0-flash-exp:free",
-                        messages: [{role: "system", content: localStorage.getItem('nx_sys') || ""}, {role: "user", content: text}]
-                    })
-                });
-                const data = await res.json();
-                document.getElementById(loadId).remove();
-                chatDisplay.innerHTML += `<div class="flex justify-start mb-4"><div class="ai-msg p-4 max-w-[95%] text-sm leading-relaxed">${marked.parse(data.choices[0].message.content)}</div></div>`;
-                hljs.highlightAll();
-                chatDisplay.scrollTo(0, chatDisplay.scrollHeight);
-            } catch (e) { document.getElementById(loadId).innerText = "ERROR: CHECK CONFIG"; }
+        function addToVault(url) {
+            gallery.innerHTML = `<img src="${url}" class="thumb" onclick="window.open('${url}')">` + gallery.innerHTML;
         }
 
         userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
-        document.getElementById('sendBtn').onclick = sendMessage;
+        document.getElementById('sendBtn').onclick = handleMessage;
         window.onload = () => {
             document.getElementById('apiKey').value = localStorage.getItem('nx_key') || '';
-            document.getElementById('systemPrompt').value = localStorage.getItem('nx_sys') || '';
-            document.getElementById('modelInput').value = localStorage.getItem('nx_mod') || 'google/gemini-2.0-flash-exp:free';
-            document.getElementById('apiType').value = localStorage.getItem('nx_typ') || 'openrouter';
+            document.getElementById('modelId').value = localStorage.getItem('nx_mod') || '';
         }
     </script>
 </body>
